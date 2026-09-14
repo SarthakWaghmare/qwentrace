@@ -1,4 +1,4 @@
-﻿import express from "express";
+import express from "express";
 import helmet from "helmet";
 import cors from "cors";
 import morgan from "morgan";
@@ -10,10 +10,16 @@ import apiRoutes from "./routes/index.js";
 const app = express();
 
 // ─── Security ─────────────────────────────────────────────────────────────────
+const clientUrls = (process.env.CLIENT_URL || "")
+  .split(",")
+  .map((url) => url.trim())
+  .filter(Boolean);
+const allowedOrigins = [...new Set(["http://localhost:5173", ...clientUrls])];
+
 app.use(helmet());
 app.use(
   cors({
-    origin: env.clientUrl,
+    origin: allowedOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
