@@ -1,8 +1,7 @@
-import fs from "fs/promises";
 import mongoose from "mongoose";
 import { Dataset } from "../models/Dataset.js";
 import { Transaction } from "../models/Transaction.js";
-import { parseFile } from "../services/parser.service.js";
+import { parseFile, parseBuffer } from "../services/parser.service.js";
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { logger } from "../utils/logger.js";
@@ -11,11 +10,10 @@ import { logger } from "../utils/logger.js";
 export const uploadDataset = asyncHandler(async (req, res) => {
   if (!req.file) throw ApiError.badRequest("No file uploaded");
 
-  const { originalname, mimetype, path: tmpPath, size } = req.file;
+  const { originalname, mimetype, buffer, size } = req.file;
   const ext = originalname.split(".").pop().toLowerCase();
 
   if (!["csv", "xlsx"].includes(ext)) {
-    await fs.unlink(tmpPath).catch(() => {});
     throw ApiError.badRequest("Only CSV and XLSX files are supported");
   }
 
@@ -33,7 +31,6 @@ export const uploadDataset = asyncHandler(async (req, res) => {
   // Parse asynchronously (don't block the response)
   setImmediate(async () => {
     try {
-      const buffer = await fs.readFile(tmpPath);
       const { rows, columnNames, detectedTypes } = await parseFile(buffer, ext);
 
       // Bulk-insert transactions in batches of 500
@@ -70,8 +67,6 @@ export const uploadDataset = asyncHandler(async (req, res) => {
         status: "failed",
         errorMessage: err.message,
       });
-    } finally {
-      await fs.unlink(tmpPath).catch(() => {});
     }
   });
 

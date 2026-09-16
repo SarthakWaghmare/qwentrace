@@ -88,9 +88,10 @@ export function normalizeRow(rawRow, headerTypes) {
 
 // ─── CSV parser ───────────────────────────────────────────────────────────────
 export function parseCSV(buffer) {
+  const content = Buffer.isBuffer(buffer) ? buffer.toString("utf8") : buffer;
   return new Promise((resolve, reject) => {
     const records = [];
-    const parser = parse(buffer, {
+    const parser = parse(content, {
       columns: true,
       skip_empty_lines: true,
       trim: true,
@@ -165,3 +166,6 @@ export async function parseFile(buffer, fileType) {
 
   return { rows, columnNames, detectedTypes };
 }
+
+export const parseBuffer = parseFile;
+
